@@ -1,0 +1,15 @@
+.idea
+.DS_Store
+*.zip
+
+datasets/lastfm/data
+datasets/movielens/data
+datasets/yelp/data
+
+data_construction/jester_data_construction/jester
+data_construction/lastfm_data_construction/lastfm
+data_construction/yelp_data_construction/yelp
+data_construction/movie_lens_data_construction/movie_lens
+data_construction/movie_lens_data_construction/ml-100k.zip
+data_construction/movie_lens_data_construction/ml-100k
+data_construction/movie_lens_data_construction/movie_lens.zip
