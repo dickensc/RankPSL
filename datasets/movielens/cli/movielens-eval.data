@@ -30,7 +30,6 @@ observations:
 
     item_cluster_preference: ../data/movielens/0/eval/item_cluster_preference_obs.txt
     item_cluster: ../data/movielens/0/eval/item_cluster_obs.txt
-    item_cluster_rank: ../data/movielens/0/eval/item_cluster_rank_obs.txt
     sim_cosine_item_clusters: ../data/movielens/0/eval/sim_cosine_item_clusters_obs.txt
 
 targets:
@@ -40,5 +39,4 @@ targets:
 
 truth:
    rating: ../data/movielens/0/eval/rating_truth.txt
-   item_cluster_rank: ../data/movielens/0/eval/item_cluster_rank_truth.txt
    item_cluster_preference: ../data/movielens/0/eval/item_cluster_preference_truth.txt

@@ -26,7 +26,7 @@ movies_df = pd.read_csv('./ml-100k/u.item', sep='|', header=None, encoding="ISO-
 movies_df.columns = ["movieId", "movie title", "release date", "video release date", "IMDb URL ", "unknown", "Action",
                      "Adventure", "Animation", "Children's", "Comedy", "Crime", "Documentary", "Drama", "Fantasy",
                      "Film-Noir", "Horror", "Musical", "Mystery", "Romance", "Sci-Fi", "Thriller", "War", "Western"]
-movies_df.set_index('movieId')
+movies_df = movies_df.set_index('movieId')
 
 ratings_df = pd.read_csv('./ml-100k/u.data', sep='\t', header=None)
 ratings_df.columns = ['userId', 'movieId', 'rating', 'timestamp']
@@ -57,7 +57,7 @@ ratings_df = ratings_df[ratings_df.userId.isin(users)]
 
 movies = ratings_df.movieId.unique()
 movies = np.random.choice(movies, n_movies, replace=False)
-movies_df = movies_df[movies_df.movieId.isin(movies)]
+movies_df = movies_df[movies_df.index.isin(movies)]
 ratings_df = ratings_df[ratings_df.movieId.isin(movies)]
 
 for fold in range(n_folds):
@@ -192,7 +192,7 @@ for fold in range(n_folds):
     item_content_similarity_block_index = pd.MultiIndex.from_arrays([item_index, flattened_frame])
     item_content_similarity_block_series = pd.Series(data=1, index=item_content_similarity_block_index)
 
-    item_cosine_similarity_block_series.to_csv('./movie_lens/' + str(fold) + '/sim_content_items_jaccard.txt',
+    item_content_similarity_block_series.to_csv('./movie_lens/' + str(fold) + '/sim_content_items_jaccard.txt',
                                                sep='\t', header=False, index=True)
 
     """
@@ -208,44 +208,100 @@ for fold in range(n_folds):
                                    sep='\t', header=False, index=True)
 
     """
-    Item cluster similarity: sim_cosine_item_clusters
+    Item cluster similarity: sim_cosine_item_clusters: based on user ratings
     """
     cluster_groups = item_cluster_predicates.groupby(level=1)
 
+    movie_user_ratings_frame = observed_ratings_frame[['movieId', 'userId', 'rating']].set_index(['movieId', 'userId']).rating.unstack()
+
+    clustered_ratings = pd.DataFrame(data=0, index=np.unique(movie_cluster_assignments.values), columns=users)
+
+    # Find average movie rating for each user over the cluster
     for cluster in cluster_groups.groups:
-        cluster_ids = cluster_groups.groups[1].get_level_values(0)
+        cluster_item_ids = [str(x) for x in cluster_groups.groups[cluster].get_level_values(0).values]
+        clustered_ratings.loc[cluster, movie_user_ratings_frame.columns] = \
+            movie_user_ratings_frame.reindex(cluster_item_ids, copy=False).mean(skipna=True)
+
+    filled_clustered_ratings = clustered_ratings.fillna(0)
+
+    # use the users average rating to find the cosine similarity of the clusters
+    item_cluster_cosine_similarity_series = pd.DataFrame(
+        data=cosine_similarity(filled_clustered_ratings),
+        index=filled_clustered_ratings.index,
+        columns=filled_clustered_ratings.index).stack()
+
+    # take top 5 for each movie to define pairwise blocks
+    item_cluster_cosine_similarity_block_frame = pd.DataFrame(index=filled_clustered_ratings.index, columns=range(5))
+    for cluster in cluster_groups.groups:
+        item_cluster_cosine_similarity_block_frame.loc[cluster, :] = item_cluster_cosine_similarity_series.loc[cluster].nlargest(5).index
+
+    flattened_frame = item_cluster_cosine_similarity_block_frame.values.flatten()
+    item_cluster_index = np.array([[i] * 5 for i in item_cluster_cosine_similarity_block_frame.index]).flatten()
+    item_cluster_cosine_similarity_block_index = pd.MultiIndex.from_arrays([item_cluster_index, flattened_frame])
+    item_cluster_cosine_similarity_block_series = pd.Series(data=1, index=item_cluster_cosine_similarity_block_index)
+
+    item_cluster_cosine_similarity_block_series.to_csv('./movie_lens/' + str(fold) + '/sim_cosine_item_clusters.txt',
+                                                       sep='\t', header=False, index=True)
 
     """
-    Preference Predicate
+    Item cluster rank: item_cluster_rank: latent variable only need targets
     """
-    # observed relative ranks
-    observed_user_movie_preferences = list(
-        map(query_item_preferences(observed_ratings_frame, 'userId', 'movieId', 'rating'),
-            observed_ratings_frame.userId.unique()
+    user_item_cluster_index = pd.MultiIndex.from_product([users, list(cluster_groups.groups.keys())])
+    pd.DataFrame(index=user_item_cluster_index).to_csv('./movie_lens/' + str(fold) + '/item_cluster_rank_targets.txt',
+                                                       sep='\t', header=False, index=True)
+
+    """
+    Cluster Preference Predicate: item_cluster_preference: only observed those clusters with a rating
+    """
+    # observed clustered ratings
+    observed_cluster_ratings = clustered_ratings.stack()
+    observed_cluster_ratings.index = observed_cluster_ratings.index.set_names(['clusterId', 'userId'])
+    observed_cluster_ratings.name = 'rating'
+    observed_cluster_ratings_frame = observed_cluster_ratings.reset_index()
+
+    observed_cluster_preferences = list(
+        map(query_item_preferences(observed_cluster_ratings_frame, 'userId', 'clusterId', 'rating'),
+            observed_cluster_ratings_frame.userId.unique()
             )
     )
-    observed_relative_rank_df = pd.concat(observed_user_movie_preferences, keys=[df.name for df in
-                                                                                 observed_user_movie_preferences])
 
+    observed_cluster_preferences_df = pd.concat(observed_cluster_preferences, keys=[df.name for df in
+                                                                                    observed_cluster_preferences])
 
-    observed_relative_rank_df.to_csv('./movie_lens/rel_rank_obs.txt',
-                                     sep='\t', header=False, index=True,
-                                     chunksize=100000)
+    observed_cluster_preferences_df.to_csv('./movie_lens/' + str(fold) + '/item_cluster_preference_obs.txt',
+                                           sep='\t', header=False, index=True)
 
-    # truth relative ranks
-    truth_user_movie_preferences = list(
-        map(query_item_preferences(truth_ratings_frame, 'userId', 'movieId', 'rating'),
-            truth_ratings_frame.userId.unique()
-            )
-    )
-    truth_relative_rank_df = pd.concat(truth_user_movie_preferences, keys=[df.name for df in truth_user_movie_preferences])
-
-    truth_relative_rank_df.to_csv('./movie_lens/rel_rank_truth.txt',
-                                  sep='\t', header=False, index=True,
-                                  chunksize=100000)
-
-    # target relative rank
-    target_relative_rank_series = target_preferences(movie_movie_canopy_series, users)
-
-    write_path = './movie_lens/rel_rank_targets.txt'
-    filter_and_write_targets(target_relative_rank_series, observed_relative_rank_df, write_path)
+    """
+    Preference Predicate: 
+    """
+    # # observed relative ranks
+    # observed_user_movie_preferences = list(
+    #     map(query_item_preferences(observed_ratings_frame, 'userId', 'movieId', 'rating'),
+    #         observed_ratings_frame.userId.unique()
+    #         )
+    # )
+    # observed_relative_rank_df = pd.concat(observed_user_movie_preferences, keys=[df.name for df in
+    #                                                                              observed_user_movie_preferences])
+    #
+    #
+    # observed_relative_rank_df.to_csv('./movie_lens/rel_rank_obs.txt',
+    #                                  sep='\t', header=False, index=True,
+    #                                  chunksize=100000)
+    #
+    # # truth relative ranks
+    # truth_user_movie_preferences = list(
+    #     map(query_item_preferences(truth_ratings_frame, 'userId', 'movieId', 'rating'),
+    #         truth_ratings_frame.userId.unique()
+    #         )
+    # )
+    # truth_relative_rank_df = pd.concat(truth_user_movie_preferences, keys=[df.name for df in truth_user_movie_preferences])
+    #
+    # truth_relative_rank_df.to_csv('./movie_lens/rel_rank_truth.txt',
+    #                               sep='\t', header=False, index=True,
+    #                               chunksize=100000)
+    #
+    # # target relative rank
+    # target_relative_rank_series = target_preferences(movie_movie_canopy_series, users)
+    #
+    # write_path = './movie_lens/rel_rank_targets.txt'
+    # filter_and_write_targets(target_relative_rank_series, observed_relative_rank_df, write_path)
