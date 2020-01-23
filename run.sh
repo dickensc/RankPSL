@@ -2,7 +2,7 @@
 
 # Run all the experiments.
 
-INFERENCE_DATASETS='lastfm yelp'
+INFERENCE_DATASETS='movielens'
 
 function main() {
     trap exit SIGINT

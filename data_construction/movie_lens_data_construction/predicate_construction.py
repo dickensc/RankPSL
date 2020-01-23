@@ -212,17 +212,21 @@ for fold in range(n_folds):
     """
     cluster_groups = item_cluster_predicates.groupby(level=1)
 
-    movie_user_ratings_frame = observed_ratings_frame[['movieId', 'userId', 'rating']].set_index(['movieId', 'userId']).rating.unstack()
+    observed_movie_user_ratings_frame = observed_ratings_frame[['movieId', 'userId', 'rating']].set_index(['movieId', 'userId']).rating.unstack()
+    truth_movie_user_ratings_frame = ratings_df[['movieId', 'userId', 'rating']].set_index(['movieId', 'userId']).rating.unstack()
 
-    clustered_ratings = pd.DataFrame(data=0, index=np.unique(movie_cluster_assignments.values), columns=users)
+    observed_clustered_ratings = pd.DataFrame(data=0, index=np.unique(movie_cluster_assignments.values), columns=users)
+    truth_clustered_ratings = pd.DataFrame(data=0, index=np.unique(movie_cluster_assignments.values), columns=users)
 
     # Find average movie rating for each user over the cluster
     for cluster in cluster_groups.groups:
         cluster_item_ids = [str(x) for x in cluster_groups.groups[cluster].get_level_values(0).values]
-        clustered_ratings.loc[cluster, movie_user_ratings_frame.columns] = \
-            movie_user_ratings_frame.reindex(cluster_item_ids, copy=False).mean(skipna=True)
+        observed_clustered_ratings.loc[cluster, observed_movie_user_ratings_frame.columns] = \
+            observed_movie_user_ratings_frame.reindex(cluster_item_ids, copy=False).mean(skipna=True)
+        truth_clustered_ratings.loc[cluster, truth_movie_user_ratings_frame.columns] = \
+            truth_movie_user_ratings_frame.reindex(cluster_item_ids, copy=False).mean(skipna=True)
 
-    filled_clustered_ratings = clustered_ratings.fillna(0)
+    filled_clustered_ratings = observed_clustered_ratings.fillna(0)
 
     # use the users average rating to find the cosine similarity of the clusters
     item_cluster_cosine_similarity_series = pd.DataFrame(
@@ -254,10 +258,10 @@ for fold in range(n_folds):
     Cluster Preference Predicate: item_cluster_preference: only observed those clusters with a rating
     """
     # observed clustered ratings
-    observed_cluster_ratings = clustered_ratings.stack()
-    observed_cluster_ratings.index = observed_cluster_ratings.index.set_names(['clusterId', 'userId'])
-    observed_cluster_ratings.name = 'rating'
-    observed_cluster_ratings_frame = observed_cluster_ratings.reset_index()
+    observed_clustered_ratings_series = observed_clustered_ratings.stack()
+    observed_clustered_ratings_series.index = observed_clustered_ratings_series.index.set_names(['clusterId', 'userId'])
+    observed_clustered_ratings_series.name = 'rating'
+    observed_cluster_ratings_frame = observed_clustered_ratings_series.reset_index()
 
     observed_cluster_preferences = list(
         map(query_item_preferences(observed_cluster_ratings_frame, 'userId', 'clusterId', 'rating'),
@@ -270,6 +274,35 @@ for fold in range(n_folds):
 
     observed_cluster_preferences_df.to_csv('./movie_lens/' + str(fold) + '/item_cluster_preference_obs.txt',
                                            sep='\t', header=False, index=True)
+
+    # truth clustered ratings
+    truth_clustered_ratings_series = truth_clustered_ratings.stack()
+    # filter already observed cluster ratings
+    truth_clustered_ratings_series = truth_clustered_ratings_series[~truth_clustered_ratings_series.index.isin(observed_clustered_ratings_series.index)]
+    truth_clustered_ratings_series.index = truth_clustered_ratings_series.index.set_names(['clusterId', 'userId'])
+    truth_clustered_ratings_series.name = 'rating'
+    truth_clustered_ratings_frame = truth_clustered_ratings_series.reset_index()
+
+    truth_cluster_preferences = list(
+        map(query_item_preferences(truth_clustered_ratings_frame, 'userId', 'clusterId', 'rating'),
+            truth_clustered_ratings_frame.userId.unique()
+            )
+    )
+
+    truth_cluster_preferences_df = pd.concat(truth_cluster_preferences, keys=[df.name for df in
+                                                                              truth_cluster_preferences])
+
+    truth_cluster_preferences_df.to_csv('./movie_lens/' + str(fold) + '/item_cluster_preference_truth.txt',
+                                           sep='\t', header=False, index=True)
+
+    # target clustered ratings
+    all_preferences_index = pd.MultiIndex.from_product([users, list(cluster_groups.groups.keys()),
+                                                        list(cluster_groups.groups.keys())])
+    target_preferences_index = all_preferences_index[~(all_preferences_index.isin(truth_cluster_preferences_df.index) |
+                                                       all_preferences_index.isin(observed_cluster_preferences_df.index))]
+    target_cluster_preferences_df = pd.DataFrame(index=target_preferences_index)
+    target_cluster_preferences_df.to_csv('./movie_lens/' + str(fold) + '/item_cluster_preference_target.txt',
+                                         sep='\t', header=False, index=True)
 
     """
     Preference Predicate: 
