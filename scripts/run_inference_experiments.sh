@@ -1,17 +1,17 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Run experiments using different inference methods.
 
 readonly THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly BASE_OUT_DIR="${THIS_DIR}/../results/inference"
 
-readonly NUM_FOLDS=5
+readonly NUM_FOLDS=1
 
-readonly INFERENCE_METHODS='ti'
+readonly INFERENCE_METHODS='admm'
 
 readonly WEIGHT_LEARNING_METHODS='gpp uniform'
 # readonly ABLATIONSETTING='-default -itemCluster -userCluster -userItemCluster'
-readonly ABLATIONSETTING='-default -itemCluster'
+readonly ABLATIONSETTING='default itemCluster canopyPreference'
 
 # Options specific to each method (missing keys yield empty strings).
 declare -A INFERENCE_METHOD_OPTIONS
@@ -24,7 +24,7 @@ function run() {
     local outDir=$2
     local fold=$3
     local wl_method=$4
-    local ablatiion_setting=$5
+    local ablation_setting=$5
     local extraOptions=$6
 
     mkdir -p "${outDir}"
@@ -40,7 +40,7 @@ function run() {
 
     pushd . > /dev/null
         cd "${cliDir}"
-        /usr/bin/time -v --output="${timePath}" ./run.sh "${fold}" "${wl_method}" "${ablatiion_setting}" "${extraOptions}" > "${outPath}" 2> "${errPath}"
+        ./run.sh "${fold}" "${wl_method}" "${ablation_setting}" "${extraOptions}" > "${outPath}" 2> "${errPath}"
     popd > /dev/null
 }
 
@@ -55,6 +55,8 @@ function run_example() {
     local nfolds=NUM_FOLDS
     local outDir
     local options="${INFERENCE_METHOD_OPTIONS[${inference_method}]}"
+
+    echo $options
 
    for ablatiion_setting in $ABLATIONSETTING; do
       for ((fold=0; fold<"${nfolds}"; fold++)) do
