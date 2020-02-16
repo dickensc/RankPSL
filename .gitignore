@@ -3,6 +3,9 @@
 *.zip
 *.jar
 *.pyc
+*.csv
+*.json
+*.json.gz
 
 datasets/lastfm/data
 datasets/lastfm/cli/inferred-predicates
@@ -10,16 +13,24 @@ datasets/movielens/data
 datasets/movielens/cli/inferred-predicates
 datasets/yelp/data
 datasets/yelp/cli/inferred-predicates
+datasets/goodreads/data
+datasets/goodreads/cli/inferred-predicates
+
 *-learned.psl
 
 data_construction/jester_data_construction/jester
 data_construction/lastfm_data_construction/lastfm
+
 data_construction/yelp_data_construction/yelp
+
 data_construction/movielens_data_construction/movielens
 data_construction/movielens_data_construction/ml-100k.zip
 data_construction/movielens_data_construction/ml-100k
 data_construction/movielens_data_construction/movie_lens.zip
+
 data_construction/movielens_set_data_construction/learning-from-sets-2019
 data_construction/movielens_set_data_construction/learning-from-sets-2019.zip
+data_construction/movielens_set_data_construction/ml-25m
+data_construction/movielens_set_data_construction/ml-25m.zip
 
 results

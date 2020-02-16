@@ -15,7 +15,8 @@
 // Content rule by Jaccard similarity.
 1.0 : rated(U,I1) & rated(U,I2) & rating(U,I1) & sim_content_items_jaccard(I1,I2) >> rating(U,I2)^2
 
-// Preference Rules
+// Preference Rules: preference propogate for items in the same cluster over similar users and items.
+// similarity is determined by ratings and clusters are determined by content.
 item_preference(U1, I1, I2) + item_preference(U1, I2, I1) = 1.
 1.0 : item_preference(U1, I1, I2) & sim_cosine_users(U1, U2) & item_cluster(I1,IC) & item_cluster(I2,IC) & rated_item_cluster(U1,IC) & rated_item_cluster(U2,IC) -> item_preference(U2, I1, I2) ^2
 1.0 : item_preference(U, I1, I2) & sim_cosine_items(I2, I3)  & item_cluster(I1,IC) & item_cluster(I2,IC) & item_cluster(I3,IC) & rated_item_cluster(U,IC) -> item_preference(U, I1, I3) ^2

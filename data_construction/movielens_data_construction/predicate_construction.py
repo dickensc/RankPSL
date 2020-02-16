@@ -80,7 +80,7 @@ for fold in range(n_folds):
     learn_ratings = ratings_permutation[: int(1 * len(ratings_permutation) / 2)]
     eval_ratings = ratings_permutation[int(1 * len(ratings_permutation) / 2):]
 
-    ratings_frames = {'learn': ratings_df.loc[learn_ratings], 'eval': ratings_df.loc[learn_ratings]}
+    ratings_frames = {'learn': ratings_df.loc[learn_ratings], 'eval': ratings_df.loc[eval_ratings]}
 
     for setting in ['learn', 'eval']:
         """
@@ -105,7 +105,7 @@ for fold in range(n_folds):
         Item scoping predicate
         """
         item_scope_series = pd.Series(data=1, index=movies)
-        item_scope_series.to_csv('./movielens/' + str(fold) + '/' + setting +'/item_obs.txt',
+        item_scope_series.to_csv('./movielens/' + str(fold) + '/' + setting + '/item_obs.txt',
                                  sep='\t', header=False, index=True)
 
         """
@@ -267,6 +267,14 @@ for fold in range(n_folds):
 
         item_cluster_cosine_similarity_block_series.to_csv('./movielens/' + str(fold) + '/' + setting + '/sim_cosine_item_clusters_obs.txt',
                                                            sep='\t', header=False, index=True)
+
+        """
+        Blocking Rated item cluster predicate: rated_item_cluster(U1, C)
+        """
+        rated_item_cluster_series = observed_clustered_ratings.swapaxes(1, 0).stack()
+        rated_item_cluster_series[:] = 1
+        rated_item_cluster_series.to_csv('./movielens/' + str(fold) + '/' + setting + '/rated_item_cluster_obs.txt',
+                                         sep='\t', header=False, index=True)
 
         """
         Item cluster rank: item_cluster_rank: latent variable only need targets
