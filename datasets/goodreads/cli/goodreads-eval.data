@@ -1,20 +1,7 @@
 predicates:
-    user/1: closed
-    item/1: closed
-    sim_content_items_jaccard/2: closed
-    sim_cosine_items/2: closed
-    sim_cosine_users/2: closed
-    avg_user_rating/1: closed
-    avg_item_rating/1: closed
-    rated/2: closed
-    rating/2: open
+    targeted/2: closed
+    targeted/2: closed
 
-    item_cluster/2: closed
-    sim_cosine_item_clusters/2: closed
-    item_cluster_rank/2: open
-    item_cluster_preference/3: open
-    item_preference/3: open
-    rated_item_cluster/2: closed
 
 observations:
     user: ../data/movielens/0/eval/user_obs.txt

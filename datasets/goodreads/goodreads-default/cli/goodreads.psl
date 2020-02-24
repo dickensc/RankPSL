@@ -14,4 +14,5 @@
 
 // structure among users and items (structured input)
 1.0 : targeted(U,I1) & targeted(U,I2) & rating(U,I1) & authored(A, I1) & authored(A, I2) >> rating(U,I2)^2
+1.0 : targeted(U,I1) & targeted(U,I2) & preference(U,I1) & series(S, I1) & series(S, I2) >> preference(U,I2)^2
 1.0 : targeted(U,I1) & targeted(U,I2) & rating(U,I1) & genre(G, I1) & genre(G, I2) >> rating(U,I2)^2

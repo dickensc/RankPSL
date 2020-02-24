@@ -2,7 +2,7 @@
 
 # Run all the experiments.
 
-INFERENCE_DATASETS='movielens'
+INFERENCE_DATASETS='goodreads'
 
 function main() {
     trap exit SIGINT

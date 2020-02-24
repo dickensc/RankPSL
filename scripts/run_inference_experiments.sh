@@ -9,7 +9,8 @@ readonly NUM_FOLDS=1
 
 readonly INFERENCE_METHODS='admm'
 
-readonly WEIGHT_LEARNING_METHODS='gpp uniform'
+#readonly WEIGHT_LEARNING_METHODS='gpp uniform'
+readonly WEIGHT_LEARNING_METHODS=''
 readonly ABLATIONSETTING='default itemClusterPreference canopyPreference itemClusterCanopyPreference'
 
 # Options specific to each method (missing keys yield empty strings).
