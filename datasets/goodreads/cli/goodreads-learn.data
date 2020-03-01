@@ -1,46 +1,59 @@
 predicates:
-    user/1: closed
-    item/1: closed
-    sim_content_items_jaccard/2: closed
-    sim_cosine_items/2: closed
-    sim_cosine_users/2: closed
-    avg_user_rating/1: closed
-    avg_item_rating/1: closed
-    rated/2: closed
+    targeted/2:
+        - closed
+        - block
+    shelved/2: open
+    read/2: open
     rating/2: open
+    review/2: open
+    preference/2: open
+    book_average_rating/1: closed
 
-    item_cluster/2: closed
-    sim_cosine_item_clusters/2: closed
-    item_cluster_rank/2: open
-    item_cluster_preference/3: open
-    item_preference/3: open
-    rated_item_cluster/2: closed
+    item_collab_filter_jaccard/2:
+            - closed
+            - block
+    user_collab_filter_jaccard/2:
+            - closed
+            - block
+
+    authored/2:
+        - closed
+        - block
+    series/2:
+        - closed
+        - block
+    genre/2:
+        - closed
+        - block
+    publisher/2:
+        - closed
+        - block
 
 observations:
-    user: ../data/movielens/0/learn/user_obs.txt
-    item: ../data/movielens/0/learn/item_obs.txt
-    sim_content_items_jaccard: ../data/movielens/0/learn/sim_content_items_jaccard_obs.txt
+    targeted: ../data/goodreads/0/eval/targeted_obs.txt
+    shelved: ../data/goodreads/0/eval/shelved_obs.txt
+    read: ../data/goodreads/0/eval/read_obs.txt
+    rating: ../data/goodreads/0/eval/rating_obs.txt
+    review: ../data/goodreads/0/eval/review_obs.txt
 
-    sim_cosine_items: ../data/movielens/0/learn/sim_cosine_items_obs.txt
-    sim_cosine_users: ../data/movielens/0/learn/sim_cosine_users_obs.txt
+    item_collab_filter_jaccard: ../data/goodreads/0/eval/item_collab_filter_jaccard_obs.txt
+    user_collab_filter_jaccard: ../data/goodreads/0/eval/user_collab_filter_jaccard_obs.txt
 
-    avg_user_rating: ../data/movielens/0/learn/avg_user_rating_obs.txt
-    avg_item_rating: ../data/movielens/0/learn/avg_item_rating_obs.txt
-
-    rating: ../data/movielens/0/learn/rating_obs.txt
-    rated: ../data/movielens/0/learn/rated_obs.txt
-    rated_item_cluster: ../data/movielens/0/learn/rated_item_cluster_obs.txt
-
-    item_cluster_preference: ../data/movielens/0/learn/item_cluster_preference_obs.txt
-    item_preference: ../data/movielens/0/learn/item_preference_obs.txt
-    item_cluster: ../data/movielens/0/learn/item_cluster_obs.txt
-    sim_cosine_item_clusters: ../data/movielens/0/learn/sim_cosine_item_clusters_obs.txt
+    authored: ../data/goodreads/0/eval/authored_obs.txt
+    series: ../data/goodreads/0/eval/series_obs.txt
+    genre: ../data/goodreads/0/eval/genre_obs.txt
+    book_average_rating: ../data/goodreads/0/eval/book_average_rating_obs.txt
+    publisher: ../data/goodreads/0/eval/publisher_obs.txt
 
 targets:
-   rating: ../data/movielens/0/learn/rating_targets.txt
-   item_cluster_rank: ../data/movielens/0/learn/item_cluster_rank_targets.txt
-   item_cluster_preference: ../data/movielens/0/learn/item_cluster_preference_targets.txt
-   item_preference: ../data/movielens/0/learn/item_preference_targets.txt
+    shelved: ../data/goodreads/0/eval/shelved_targets.txt
+    read: ../data/goodreads/0/eval/read_targets.txt
+    rating: ../data/goodreads/0/eval/rating_targets.txt
+    review: ../data/goodreads/0/eval/review_targets.txt
+    preference: ../data/goodreads/0/eval/preference_targets.txt
 
 truth:
-   rating: ../data/movielens/0/learn/rating_truth.txt
+    shelved: ../data/goodreads/0/eval/shelved_truth.txt
+    read: ../data/goodreads/0/eval/read_truth.txt
+    rating: ../data/goodreads/0/eval/rating_truth.txt
+    review: ../data/goodreads/0/eval/review_truth.txt

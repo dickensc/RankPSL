@@ -1,8 +1,8 @@
 #!/bin/bash
 
-readonly DATA_URL='https://linqs-data.soe.ucsc.edu/public/dickens-ranking/movielens.zip'
-readonly DATA_FILE='movielens.zip'
-readonly DATA_DIR='movielens'
+readonly DATA_URL='https://linqs-data.soe.ucsc.edu/public/dickens-ranking/goodreads.zip'
+readonly DATA_FILE='goodreads.zip'
+readonly DATA_DIR='goodreads'
 
 function main() {
    trap exit SIGINT

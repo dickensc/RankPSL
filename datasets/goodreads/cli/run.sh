@@ -10,9 +10,9 @@ readonly JAR_PATH="./psl-cli-${PSL_VERSION}.jar"
 #readonly JAR_PATH="/Users/charlesdickens/Documents/GitHub/psl/psl-core/target/psl-core-2.3.0-SNAPSHOT.jar"
 
 readonly FETCH_DATA_SCRIPT='../data/fetchData.sh'
-readonly BASE_NAME='movielens'
+readonly BASE_NAME='goodreads'
 
-readonly ADDITIONAL_PSL_OPTIONS='-int-ids --postgres psl -D log4j.threshold=TRACE persistedatommanager.throwaccessexception=false'
+readonly ADDITIONAL_PSL_OPTIONS='--postgres psl -D log4j.threshold=TRACE persistedatommanager.throwaccessexception=false'
 #readonly ADDITIONAL_PSL_OPTIONS='-int-ids -D log4j.threshold=TRACE persistedatommanager.throwaccessexception=false'
 readonly ADDITIONAL_EVAL_OPTIONS='--infer --eval org.linqs.psl.evaluation.statistics.RankingEvaluator'
 
@@ -34,7 +34,7 @@ function main() {
    shift 3
 
    # Get the data
-   getData
+   #getData
 
    # Make sure we can run PSL.
    check_requirements
@@ -55,8 +55,8 @@ function modifyDataFile() {
   old_fold=$1
   new_fold=$2
 
-  sed -i "" "s/\/${old_fold}\//\/${new_fold}\//g" movielens-learn.data
-  sed -i "" "s/\/${old_fold}\//\/${new_fold}\//g" movielens-eval.data
+  sed -i "" "s/\/${old_fold}\//\/${new_fold}\//g" goodreads-learn.data
+  sed -i "" "s/\/${old_fold}\//\/${new_fold}\//g" goodreads-eval.data
 }
 
 function getData() {
@@ -101,7 +101,7 @@ function runEvaluation() {
         exit 70
      fi
    else
-     java -Xmx${JAVA_MEM_GB}G -Xms${JAVA_MEM_GB}G -jar "${JAR_PATH}" --model "../${BASE_NAME}-${ablation_setting}/cli/${BASE_NAME}.psl" --data "${BASE_NAME}-eval.data" --output inferred-predicates ${ADDITIONAL_EVAL_OPTIONS} ${ADDITIONAL_PSL_OPTIONS} "$3"
+     java -Xmx${JAVA_MEM_GB}G -Xms${JAVA_MEM_GB}G -jar "${JAR_PATH}" --model "../${BASE_NAME}-${ablation_setting}/cli/${BASE_NAME}.psl" --data "${BASE_NAME}-eval.data" --output inferred-predicates --satisfaction rule-satisfaction --groundrules ground-rules ${ADDITIONAL_EVAL_OPTIONS} ${ADDITIONAL_PSL_OPTIONS} "$3"
      if [[ "$?" -ne 0 ]]; then
         echo 'ERROR: Failed to run infernce'
         exit 70

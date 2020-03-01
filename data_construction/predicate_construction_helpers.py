@@ -40,9 +40,9 @@ def filter_and_write_targets(target_preference_series, observed_preferences_df, 
         )
 
         filtered_target_preferences_index = pd.MultiIndex.from_tuples(target_preferences_tuples)
-        target_chunk_series = pd.DataFrame(index=filtered_target_preferences_index)
+        target_chunk_df = pd.DataFrame(index=filtered_target_preferences_index)
 
-        target_chunk_series.to_csv(write_path, sep='\t', header=False, index=True, mode=write_mode)
+        target_chunk_df.to_csv(write_path, sep='\t', header=False, index=True, mode=write_mode)
         write_mode = 'a'
 
 

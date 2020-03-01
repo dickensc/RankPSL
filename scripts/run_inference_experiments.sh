@@ -10,8 +10,10 @@ readonly NUM_FOLDS=1
 readonly INFERENCE_METHODS='admm'
 
 #readonly WEIGHT_LEARNING_METHODS='gpp uniform'
-readonly WEIGHT_LEARNING_METHODS=''
-readonly ABLATIONSETTING='default itemClusterPreference canopyPreference itemClusterCanopyPreference'
+readonly WEIGHT_LEARNING_METHODS='uniform'
+#readonly ABLATIONSETTING='default itemClusterPreference canopyPreference itemClusterCanopyPreference'
+readonly ABLATIONSETTING='default implicit-feedback'
+#readonly ABLATIONSETTING='default'
 
 # Options specific to each method (missing keys yield empty strings).
 declare -A INFERENCE_METHOD_OPTIONS
