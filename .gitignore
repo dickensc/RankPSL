@@ -6,6 +6,9 @@
 *.csv
 *.json
 *.json.gz
+*.ipynb_checkpoints
+*.gz
+*.swp
 
 datasets/lastfm/data
 datasets/lastfm/cli/inferred-predicates
@@ -36,3 +39,6 @@ data_construction/goodreads_data_construction/goodreads
 
 results
 inferred-predicates
+
+nohup.out
+

@@ -57,6 +57,15 @@ def construct_predicates(books_df, interactions_df, reviews_df,
     genre_predicate(books_df, fold, setting)
     book_publisher_predicate(books_df, fold, setting)
     book_average_rating_predicate(books_df, fold, setting)
+    
+    # similarity calculation based blocking predicates
+    item_collab_filter_cosine_predicate(interactions_df, books_df, obs_interactions, target_interactions,
+                                        truth_interactions, fold, setting)
+#     user_collab_filter_jaccard_predicate(interactions_df, books_df, obs_interactions, target_interactions,
+#                                         truth_interactions, fold, setting)
+    
+    # local predictor predicates
+    # TODO: 
 
     # feedback Predicates
     shelved_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting)
@@ -65,22 +74,16 @@ def construct_predicates(books_df, interactions_df, reviews_df,
     review_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting)
     preference_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting)
 
-    # similarity blocking predicates
-    item_collab_filter_jaccard_predicate(interactions_df, obs_interactions, target_interactions,
-                                        truth_interactions, fold, setting)
-    user_collab_filter_jaccard_predicate(interactions_df, obs_interactions, target_interactions,
-                                        truth_interactions, fold, setting)
-
 
 def shelved_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting):
     """
-
-    :param interactions_df:
-    :param obs_interactions:
-    :param target_interactions:
-    :param truth_interactions:
-    :param fold:
-    :param setting:
+    A book is shelved if it is present in the interactions frame.
+    :param interactions_df: Dataframe
+    :param obs_interactions: index object 
+    :param target_interactions: index object 
+    :param truth_interactions: index object 
+    :param fold: integer
+    :param setting: string, either learn or eval
     :return:
     """
     def write(s, p):
@@ -105,13 +108,13 @@ def shelved_predicate(interactions_df, obs_interactions, target_interactions, tr
 
 def read_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting):
     """
-
-    :param interactions_df:
-    :param obs_interactions:
-    :param target_interactions:
-    :param truth_interactions:
-    :param fold:
-    :param setting:
+    A book is read if it is the is_read value is True in the interactions frame.
+    :param interactions_df: Dataframe
+    :param obs_interactions: index object 
+    :param target_interactions: index object 
+    :param truth_interactions: index object 
+    :param fold: integer
+    :param setting: string, either learn or eval
     :return:
     """
 
@@ -143,13 +146,18 @@ def read_predicate(interactions_df, obs_interactions, target_interactions, truth
 
 def rating_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting):
     """
-
-    :param interactions_df:
-    :param obs_interactions:
-    :param target_interactions:
-    :param truth_interactions:
-    :param fold:
-    :param setting:
+    A user's book rating is given by the rating value in the interactions frame.
+    We normalize the rating between 0 and 1 across all users.
+    TODO: standardization should be on a per user level so every user rating is on the same scale.
+          We would need to handle users who have only given ratings with a single value since the 
+          variance would be 0 in that case, hence we would be dividiing by 0 and the world would 
+          implode.
+    :param interactions_df: Dataframe
+    :param obs_interactions: index object 
+    :param target_interactions: index object 
+    :param truth_interactions: index object 
+    :param fold: integer
+    :param setting: string, either learn or eval
     :return:
     """
 
@@ -183,7 +191,9 @@ def rating_predicate(interactions_df, obs_interactions, target_interactions, tru
 
 def review_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting):
     """
-
+    At this point the review_predicate is simply whether or not the user has given a review for a book.
+    This is captured by the review_text_incomplete column in the interactions frames.
+    TODO: incorporate sentiment analysis into these predicates.
     :param interactions_df:
     :param obs_interactions:
     :param target_interactions:
@@ -220,9 +230,15 @@ def review_predicate(interactions_df, obs_interactions, target_interactions, tru
 
 def preference_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting):
     """
-
+    The predicate representing the latent preference of a user.
+    At this point we only are inferring the preference of target user book pairs.
+    TODO: Add method for growing the target set for this predicate beyond the target user book pairs
     :param interactions_df:
-    :param partition:
+    :param obs_interactions:
+    :param target_interactions:
+    :param truth_interactions:
+    :param fold:
+    :param setting:
     :return:
     """
     def write(s, p):
@@ -235,15 +251,21 @@ def preference_predicate(interactions_df, obs_interactions, target_interactions,
     write(preference_df, partition)
 
 
-def item_collab_filter_cosine_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting):
+def item_collab_filter_cosine_predicate(interactions_df, books_df, obs_interactions, target_interactions, truth_interactions, fold, setting):
     """
-
+    For Item item collaborative filtering.
+    Calculates the top k most similar items to another item based on user shelves
+    To aviod having to calculate the n x n cross pruduct similarity, we instead block by language and genre
     :param interactions_df:
-    :param partition:
+    :param obs_interactions:
+    :param target_interactions:
+    :param truth_interactions:
+    :param fold:
+    :param setting:
     :return:
     """
 
-    sim_threshold = 0.25
+    k = 10
 
     def write(s, p):
         s.to_csv('./goodreads/' + str(fold) + '/' + setting + '/item_collab_filter_cosine_' + p + '.txt',
@@ -252,73 +274,148 @@ def item_collab_filter_cosine_predicate(interactions_df, obs_interactions, targe
     # observed predicates
     partition = 'obs'
     observed_interactions_df = interactions_df.loc[obs_interactions, :]
-    # similarity based on ratings
-    user_book_ratings = observed_interactions_df['rating'].unstack().fillna(0)
-    similarity_matrix = cosine_similarity(user_book_ratings.transpose())
-    item_item_sim = pd.DataFrame(similarity_matrix, index=user_book_ratings.columns, columns=user_book_ratings.columns)
-    item_item_sim = item_item_sim[item_item_sim > sim_threshold].stack()
-    item_item_series = pd.Series(data=1, index=item_item_sim.index)
+    observed_books_df = books_df.loc[obs_interactions.get_level_values(1).unique()]
+
+    # similarity based on shelves (<- chosen since it the most dense value)
+    # TODO: incorporate sparser and less noising signals from user
+
+    # index: user_ids columns: book_ids values: 1 if shelved by user 0 o.w.
+    user_book_shelves = pd.Series(data=1, index=obs_interactions).unstack().fillna(0)
+    # index: book_ids columns: book_ids
+    item_item_sim = pd.DataFrame(data=0, index=user_book_shelves.columns, columns=user_book_shelves.columns)
+
+    # block similarity calculations by language and by genre heuristics
+    # use unique values of language codes to block similarity calculations: generalize by adding 
+    #             support for clusters of languages, i.e. eng and can-en can be grouped together
+    # use top-1 informative shelf name: generalize by using top-n informative shelf names
+
+    # create genre to book data frame, genre is from shelf names by users
+    # index: book_id, columns: genre
+    genre_series = pd.Series(index=observed_books_df.index)
+    for book_id, book in observed_books_df.iterrows():
+        for i in range(len(book.popular_shelves)):
+            # note that popular_shelves is sorted
+            if book.popular_shelves[i]['name'] != 'to-read':
+                genre_series.loc[book.name] = book.popular_shelves[i]['name']
+                break
+
+    # add genre series as column of observed_books_df
+    observed_books_df.loc[:, 'genre'] = genre_series
+
+    # block by both 'genre' and 'language_code' and calculate similarity for books within block
+    for _, book_group in observed_books_df.groupby(['genre', 'language_code']):
+        similarity_matrix = cosine_similarity(user_book_shelves.loc[:, book_group.index].transpose())
+        item_item_sim.loc[book_group.index, book_group.index] = similarity_matrix
+        
+    # Very sparse, thus very small cosine sim values
+    # approach: for each book use k most similar books to it
+    book_top_k_sim = item_item_sim.apply(pd.Series.nlargest, n=5).stack()
+    item_item_series = pd.Series(data=1, index=book_top_k_sim.index)
     write(item_item_series, partition)
 
 
-def user_collab_filter_cosine_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting):
-    """
+# TODO: need structure across users to block
+# def user_collab_filter_cosine_predicate(interactions_df, books_df, obs_interactions, target_interactions, truth_interactions, fold, setting):
+#     """
+#     For User User collaborative filtering.
+#     Calculates the top k most similar users to another user based on user shelves
+    
+#     To aviod having to calculate the n x n cross pruduct similarity, we instead block by clustering books 
+#     based on content (measured through labeled shelves) and then block users by the cluster that represents 
+#     the majority on their shelf
+        
+#     :param interactions_df:
+#     :param partition:
+#     :return:
+#     """
+#     k = 10
 
-    :param interactions_df:
-    :param partition:
-    :return:
-    """
-    sim_threshold = 0.25
+#     def write(s, p):
+#         s.to_csv('./goodreads/' + str(fold) + '/' + setting + '/item_collab_filter_cosine_' + p + '.txt',
+#                  sep='\t', header=False, index=True)
 
-    def write(s, p):
-        s.to_csv('./goodreads/' + str(fold) + '/' + setting + '/user_collab_filter_cosine_' + p + '.txt',
-                 sep='\t', header=False, index=True)
+#     # observed predicates
+#     partition = 'obs'
+#     obs_interactions = train_interactions_df.index
+#     target_interactions = train_interactions_df.index
+#     truth_interactions = test_interactions_df.index
 
-    # observed predicates
-    partition = 'obs'
-    observed_interactions_df = interactions_df.loc[obs_interactions, :]
-    # similarity based on ratings
-    user_book_ratings = observed_interactions_df['rating'].unstack().fillna(0)
-    similarity_matrix = cosine_similarity(user_book_ratings)
-    user_user_sim = pd.DataFrame(similarity_matrix, index=user_book_ratings.index, columns=user_book_ratings.index)
-    user_user_sim = user_user_sim[user_user_sim > sim_threshold].stack()
-    user_user_series = pd.Series(data=1, index=user_user_sim.index)
-    write(user_user_series, partition)
+#     # observed predicates
+#     partition = 'obs'
+#     observed_interactions_df = interactions_df.loc[obs_interactions, :]
+#     observed_books_df = books_df.loc[obs_interactions.get_level_values(1).unique()]
+
+#     # similarity based on shelves (<- chosen since it the most dense value)
+#     # TODO: incorporate sparser and less noising signals from user
+
+#     # index: user_ids columns: book_ids values: 1 if shelved by user 0 o.w.
+#     user_book_shelves = pd.Series(data=1, index=obs_interactions).unstack().fillna(0)
+#     # index: book_ids columns: book_ids
+#     item_item_sim = pd.DataFrame(data=0, index=user_book_shelves.columns, columns=user_book_shelves.columns)
+
+#     # block similarity calculations by language and by genre heuristics
+#     # use unique values of language codes to block similarity calculations: generalize by adding 
+#     #             support for clusters of languages, i.e. eng and can-en can be grouped together
+#     # use top-1 informative shelf name: generalize by using top-n informative shelf names
+
+#     # create genre to book data frame, genre is from shelf names by users
+#     # index: book_id, columns: genre
+#     genre_series = pd.Series(index=observed_books_df.index)
+#     for book_id, book in observed_books_df.iterrows():
+#         for i in range(len(book.popular_shelves)):
+#             # note that popular_shelves is sorted
+#             if book.popular_shelves[i]['name'] != 'to-read':
+#                 genre_series.loc[book.name] = book.popular_shelves[i]['name']
+#                 break
+
+#     # add genre series as column of observed_books_df
+#     observed_books_df.loc[:, 'genre'] = genre_series
+
+#     # block by both 'genre' and 'language_code' and calculate similarity for books within block
+#     for _, book_group in observed_books_df.groupby(['genre', 'language_code']):
+#         similarity_matrix = cosine_similarity(user_book_shelves.loc[:, book_group.index].transpose())
+#         item_item_sim.loc[book_group.index, book_group.index] = similarity_matrix
+        
+#     # Very sparse, thus very small cosine sim values
+#     # approach: for each book use k most similar books to it
+#     book_top_k_sim = item_item_sim.apply(pd.Series.nlargest, n=5).stack()
+#     item_item_series = pd.Series(data=1, index=book_top_k_sim.index)
+#     write(item_item_series, partition)
 
 
-def user_collab_filter_jaccard_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting, n_neighbors=25):
-    """
+# def user_collab_filter_jaccard_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting, n_neighbors=25):
+#     """
 
-    :param interactions_df:
-    :param partition:
-    :return:
-    """
+#     :param interactions_df:
+#     :param partition:
+#     :return:
+#     """
 
-    def write(s, p):
-        s.to_csv('./goodreads/' + str(fold) + '/' + setting + '/user_collab_filter_jaccard_' + p + '.txt',
-                 sep='\t', header=False, index=True)
+#     def write(s, p):
+#         s.to_csv('./goodreads/' + str(fold) + '/' + setting + '/user_collab_filter_jaccard_' + p + '.txt',
+#                  sep='\t', header=False, index=True)
 
-    # observed predicates
-    partition = 'obs'
-    observed_interactions_df = interactions_df.loc[obs_interactions, :]
+#     # observed predicates
+#     partition = 'obs'
+#     observed_interactions_df = interactions_df.loc[obs_interactions, :]
 
-    # build user book ratings matrix
-    # Note that this could perhaps be improved by incorporating user means as threshold
-    user_book_ratings = observed_interactions_df['rating'].unstack().fillna(0)
-    user_book_ratings[user_book_ratings < 2.5] = 0
-    user_book_ratings[user_book_ratings > 2.5] = 1
+#     # build user book ratings matrix
+#     # Note that this could perhaps be improved by incorporating user means as threshold
+#     user_book_ratings = observed_interactions_df['rating'].unstack().fillna(0)
+#     user_book_ratings[user_book_ratings < 2.5] = 0
+#     user_book_ratings[user_book_ratings > 2.5] = 1
 
-    # find top n_neighbors most similar users based on this similarity metric
-    NN = NearestNeighbors(n_neighbors=n_neighbors, metric="jaccard", algorithm='ball_tree')
-    NN.fit(user_book_ratings)
-    NearestNeighbors_df = pd.DataFrame(NN.kneighbors(return_distance=False), index=user_book_ratings.index)
+#     # find top n_neighbors most similar users based on this similarity metric
+#     NN = NearestNeighbors(n_neighbors=n_neighbors, metric="jaccard", algorithm='ball_tree')
+#     NN.fit(user_book_ratings)
+#     NearestNeighbors_df = pd.DataFrame(NN.kneighbors(return_distance=False), index=user_book_ratings.index)
 
-    # dereference neighbors, stack, set index, and write
-    NearestNeighbors_df = NearestNeighbors_df.apply(lambda x: NearestNeighbors_df.index[x], axis=0)
-    NearestNeighbors_df = NearestNeighbors_df.stack().reset_index().set_index(['user_id', 0])
-    NearestNeighbors_df.level_1 = 1
+#     # dereference neighbors, stack, set index, and write
+#     NearestNeighbors_df = NearestNeighbors_df.apply(lambda x: NearestNeighbors_df.index[x], axis=0)
+#     NearestNeighbors_df = NearestNeighbors_df.stack().reset_index().set_index(['user_id', 0])
+#     NearestNeighbors_df.level_1 = 1
 
-    write(NearestNeighbors_df, partition)
+#     write(NearestNeighbors_df, partition)
 
 
 def item_collab_filter_jaccard_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting, n_neighbors=25):

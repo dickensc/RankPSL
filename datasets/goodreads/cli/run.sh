@@ -20,10 +20,10 @@ declare -A WEIGHT_LEARNING_METHOD_OPTIONS
 WEIGHT_LEARNING_METHOD_OPTIONS[uniform]=''
 WEIGHT_LEARNING_METHOD_OPTIONS[gpp]='org.linqs.psl.application.learning.weight.bayesian.GaussianProcessPrior'
 
-#readonly AVAILABLE_MEM_KB=$(cat /proc/meminfo | grep 'MemTotal' | sed 's/^[^0-9]\+\([0-9]\+\)[^0-9]\+$/\1/')
-## Floor by multiples of 5 and then reserve an additional 5 GB.
-#readonly JAVA_MEM_GB=$((${AVAILABLE_MEM_KB} / 1024 / 1024 / 5 * 5 - 5))
-readonly JAVA_MEM_GB=25
+readonly AVAILABLE_MEM_KB=$(cat /proc/meminfo | grep 'MemTotal' | sed 's/^[^0-9]\+\([0-9]\+\)[^0-9]\+$/\1/')
+# Floor by multiples of 5 and then reserve an additional 5 GB.
+readonly JAVA_MEM_GB=$((${AVAILABLE_MEM_KB} / 1024 / 1024 / 5 * 5 - 5))
+# readonly JAVA_MEM_GB=25
 
 function main() {
    trap exit SIGINT
@@ -46,7 +46,7 @@ function main() {
    # Run PSL
    runWeightLearning "../${BASE_NAME}-${ablation_setting}/cli/${BASE_NAME}.psl" "$wl_method" "$@"
    runEvaluation "$ablation_setting" "$wl_method" "$@"
-
+   
    # Modify data file
    modifyDataFile "${fold}" "0"
 }
@@ -55,8 +55,8 @@ function modifyDataFile() {
   old_fold=$1
   new_fold=$2
 
-  sed -i "" "s/\/${old_fold}\//\/${new_fold}\//g" goodreads-learn.data
-  sed -i "" "s/\/${old_fold}\//\/${new_fold}\//g" goodreads-eval.data
+  sed -i "s/\/${old_fold}\//\/${new_fold}\//g" goodreads-learn.data
+  sed -i "s/\/${old_fold}\//\/${new_fold}\//g" goodreads-eval.data
 }
 
 function getData() {
@@ -101,7 +101,7 @@ function runEvaluation() {
         exit 70
      fi
    else
-     java -Xmx${JAVA_MEM_GB}G -Xms${JAVA_MEM_GB}G -jar "${JAR_PATH}" --model "../${BASE_NAME}-${ablation_setting}/cli/${BASE_NAME}.psl" --data "${BASE_NAME}-eval.data" --output inferred-predicates --satisfaction rule-satisfaction --groundrules ground-rules ${ADDITIONAL_EVAL_OPTIONS} ${ADDITIONAL_PSL_OPTIONS} "$3"
+     java -Xmx${JAVA_MEM_GB}G -Xms${JAVA_MEM_GB}G -jar "${JAR_PATH}" --model "../${BASE_NAME}-${ablation_setting}/cli/${BASE_NAME}.psl" --data "${BASE_NAME}-eval.data" --output inferred-predicates ${ADDITIONAL_EVAL_OPTIONS} ${ADDITIONAL_PSL_OPTIONS} "$3"
      if [[ "$?" -ne 0 ]]; then
         echo 'ERROR: Failed to run infernce'
         exit 70

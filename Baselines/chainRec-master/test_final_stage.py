@@ -63,7 +63,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', default='yoochoose', 
-                        help="specify a dataset from [yoochoose]")
+                        help="specify a dataset from [yoochoose goodreads]")
     parser.add_argument('--method', default='chainRec_uniform', 
                         help="specify a training method from [chainRec_uniform, chainRec_stage, bprMF]")
     parser.add_argument('--nStage', default=2, 

@@ -43,6 +43,7 @@ function run() {
     pushd . > /dev/null
         cd "${cliDir}"
         ./run.sh "${fold}" "${wl_method}" "${ablation_setting}" "${extraOptions}" > "${outPath}" 2> "${errPath}"
+        mv ./inferred-predicates "${outDir}"
     popd > /dev/null
 }
 
@@ -60,11 +61,11 @@ function run_example() {
 
     echo $options
 
-   for ablatiion_setting in $ABLATIONSETTING; do
+   for ablation_setting in $ABLATIONSETTING; do
       for ((fold=0; fold<"${nfolds}"; fold++)) do
         echo "Running ${exampleName} (#${fold}) -- ${method}."
-        outDir="${BASE_OUT_DIR}/${exampleName}/${inference_method}/${wl_method}/${ablatiion_setting}/${fold}"
-        run  "${cliDir}" "${outDir}" "${fold}" "${wl_method}" "${ablatiion_setting}" "${options}"
+        outDir="${BASE_OUT_DIR}/${exampleName}/${inference_method}/${wl_method}/${ablation_setting}/${fold}"
+        run  "${cliDir}" "${outDir}" "${fold}" "${wl_method}" "${ablation_setting}" "${options}"
         done
     done
 }

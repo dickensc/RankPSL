@@ -17,8 +17,8 @@
 1.0 : targeted(U,I) & preference(U,I) >> review(U,I)^2
 
 // Collaborative filtering
-1.0 : targeted(U,I1) & targeted(U,I2) & preference(U,I1) & user_collab_filter_jaccard(I1,I2) >> preference(U,I2)^2
-1.0 : targeted(U1,I) & targeted(U2,I) & preference(U1,I) & item_collab_filter_jaccard(U1,U2) >> preference(U2,I)^2
+// 1.0 : targeted(U,I1) & targeted(U,I2) & preference(U,I1) & user_collab_filter_cosine(I1,I2) >> preference(U,I2)^2
+1.0 : targeted(U,I1) & targeted(U,I2) & rating(U,I1) & item_collab_filter_cosine(I1,I2) >> rating(U,I2)^2
 
 // Average user preferences over authors and genres.
 // Note: preprocess so continuously observed predicates are standardized so mean is 0.5 and

@@ -9,10 +9,7 @@ predicates:
     preference/2: open
     book_average_rating/1: closed
 
-    item_collab_filter_jaccard/2:
-            - closed
-            - block
-    user_collab_filter_jaccard/2:
+    item_collab_filter_cosine/2:
             - closed
             - block
 
@@ -36,8 +33,7 @@ observations:
     rating: ../data/goodreads/0/eval/rating_obs.txt
     review: ../data/goodreads/0/eval/review_obs.txt
 
-    item_collab_filter_jaccard: ../data/goodreads/0/eval/item_collab_filter_jaccard_obs.txt
-    user_collab_filter_jaccard: ../data/goodreads/0/eval/user_collab_filter_jaccard_obs.txt
+    item_collab_filter_cosine: ../data/goodreads/0/eval/item_collab_filter_cosine_obs.txt
 
     authored: ../data/goodreads/0/eval/authored_obs.txt
     series: ../data/goodreads/0/eval/series_obs.txt
