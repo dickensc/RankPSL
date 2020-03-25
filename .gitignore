@@ -42,3 +42,7 @@ inferred-predicates
 
 nohup.out
 
+Baselines/models
+Baselines/results
+Baselines/chainRec-master/results
+Baselines/chainRec-master/models
