@@ -1,12 +1,15 @@
-// structure among users and item preferences (structured output)
 // In Good reads, we see multiple users interactions with an item
 // including date added to shelf, reading progress, rating score, and review text
 // The rules in this group are ordered by what we would expect to see in order of the most implicit to most
-// explicit form of feedback from a user reflecting their latent preference of the item
-// targeted is a block that determines whether we observed or will be evaluating the users predicted preference for the
-// item
+// explicit form of feedback reflecting their latent preference of the item
+
+// targeted is a block that determines whether we observed or will be evaluating the users predicted 
+// preference for the item
+
 // preference is the latent variable representing the users preference of the item
 // we are going to be using preference for the final ranking, which will be evaluated using
+
+// Implicit signals imply latent preference
 1.0 : targeted(U,I) & shelved(U,I) >> preference(U,I)^2
 1.0 : targeted(U,I) & preference(U,I) >> shelved(U,I)^2
 1.0 : targeted(U,I) & read(U,I) >> preference(U,I)^2
@@ -16,9 +19,13 @@
 1.0 : targeted(U,I) & review(U,I) >> preference(U,I)^2
 1.0 : targeted(U,I) & preference(U,I) >> review(U,I)^2
 
-// Collaborative filtering
-// 1.0 : targeted(U,I1) & targeted(U,I2) & preference(U,I1) & user_collab_filter_cosine(I1,I2) >> preference(U,I2)^2
-1.0 : targeted(U,I1) & targeted(U,I2) & rating(U,I1) & item_collab_filter_cosine(I1,I2) >> rating(U,I2)^2
+// Latent Factor collaborative filtering local predictor 
+// This will capture the idea that users and items that 
+// have been rated “similarly” will continue to be rated “similarly”. 
+1.0 : targeted(U,I) & NMF_shelved(U,I) >> shelved(U,I)^2
+1.0 : targeted(U,I) & NMF_read(U,I) >> read(U,I)^2
+1.0 : targeted(U,I) & NMF_rating(U,I) >> rating(U,I)^2
+1.0 : targeted(U,I) & NMF_review(U,I) >> review(U,I)^2
 
 // Average user preferences over authors and genres.
 // Note: preprocess so continuously observed predicates are standardized so mean is 0.5 and
@@ -27,6 +34,11 @@
 // Users have selection bias this could mess our estimate of the users distribution over the ratings for example.
 // We could potentially estimate user's propensity to provide feedback to weight training examples and the use that
 // training data to estimate distribution
+
+// Propagation of ratings across item content similarity, this is 
+// calculated by creating tf-idf vectors from the bookshelf names user
+// provide and then calculating the cosine similarity between the vectors
+1.0 : targeted(U,I1) & targeted(U,I2) & rating(U,I1) & item_content_similarity_cosine(U, I1, I2) >> rating(U,I2)^2
 
 // Prior on Book rating from average rating
 1.0 : targeted(U,I) & book_average_rating(I) >> rating(U,I)^2

@@ -4,6 +4,8 @@ This script constructs the necessary data files needed for psl model
 import os
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
+from sklearn.decomposition import NMF
 
 import sys
 sys.path.append('../')
@@ -65,14 +67,55 @@ def construct_predicates(books_df, interactions_df, reviews_df,
 #                                         truth_interactions, fold, setting)
     
     # local predictor predicates
-    # TODO: 
-
+    nmf_predicate()
+    
     # feedback Predicates
     shelved_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting)
     read_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting)
     rating_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting)
     review_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting)
     preference_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting)
+    
+def nmf_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting):
+    """
+    Nonnegative matrix factorization is latent factor collaborative filetering method.
+    :param interactions_df: Dataframe
+    :param obs_interactions: index object 
+    :param target_interactions: index object 
+    :param truth_interactions: index object 
+    :param fold: integer
+    :param setting: string, either learn or eval
+    :return:
+    """
+    print("predicate_construction: nmf_predicate:")
+    
+    # Number of components to use in the non negative matrix factoization model
+    # this number was chosen arbitrarily at this point
+    n_components = 20
+    
+    def write(s, p):
+        print("predicate_construction: shelved_predicate: writing: " + 
+              './goodreads/' + str(fold) + '/' + setting + '/shelved_' + p + '.txt' )
+        s.to_csv('./goodreads/' + str(fold) + '/' + setting + '/shelved_' + p + '.txt',
+                 sep='\t', header=False, index=True)
+        
+    def get_nmf_predictions(X):
+        model = NMF(n_components=20, init='random', random_state=0)
+        
+    # construct shelved matrix
+    X = pd.Series(data=1, index=obs_interactions).unstack().fillna(0)
+    
+    # construct read matrix
+    
+    # construct rating matrix
+    
+    # construct review matrix
+
+    # observed predicates
+    partition = 'obs'
+    shelved_series = pd.Series(data=1, index=obs_interactions, name='shelved')
+    write(shelved_series, partition)
+    
 
 
 def shelved_predicate(interactions_df, obs_interactions, target_interactions, truth_interactions, fold, setting):
@@ -86,7 +129,12 @@ def shelved_predicate(interactions_df, obs_interactions, target_interactions, tr
     :param setting: string, either learn or eval
     :return:
     """
+    
+    print("predicate_construction: shelved_predicate:")
+    
     def write(s, p):
+        print("predicate_construction: shelved_predicate: writing: " + 
+              './goodreads/' + str(fold) + '/' + setting + '/shelved_' + p + '.txt' )
         s.to_csv('./goodreads/' + str(fold) + '/' + setting + '/shelved_' + p + '.txt',
                  sep='\t', header=False, index=True)
 
@@ -117,8 +165,11 @@ def read_predicate(interactions_df, obs_interactions, target_interactions, truth
     :param setting: string, either learn or eval
     :return:
     """
+    print("predicate_construction: read_predicate:")
 
     def write(s, p):
+        print("predicate_construction: read_predicate: writing: " + 
+              './goodreads/' + str(fold) + '/' + setting + '/read_' + p + '.txt')        
         s.to_csv('./goodreads/' + str(fold) + '/' + setting + '/read_' + p + '.txt',
                  sep='\t', header=False, index=True)
 
@@ -160,8 +211,11 @@ def rating_predicate(interactions_df, obs_interactions, target_interactions, tru
     :param setting: string, either learn or eval
     :return:
     """
+    print("predicate_construction: rating_predicate:")
 
     def write(s, p):
+        print("predicate_construction: rating_predicate: writing: " + 
+              './goodreads/' + str(fold) + '/' + setting + '/rating_' + p + '.txt')   
         s.to_csv('./goodreads/' + str(fold) + '/' + setting + '/rating_' + p + '.txt',
                  sep='\t', header=False, index=True)
 
@@ -202,7 +256,11 @@ def review_predicate(interactions_df, obs_interactions, target_interactions, tru
     :param setting:
     :return:
     """
+    print("predicate_construction: review_predicate:")
+
     def write(s, p):
+        print("predicate_construction: review_predicate: writing: " + 
+              './goodreads/' + str(fold) + '/' + setting + '/review_' + p + '.txt')   
         s.to_csv('./goodreads/' + str(fold) + '/' + setting + '/review_' + p + '.txt',
                  sep='\t', header=False, index=True)
 
@@ -241,7 +299,11 @@ def preference_predicate(interactions_df, obs_interactions, target_interactions,
     :param setting:
     :return:
     """
+    print("predicate_construction: preference_predicate:")
+
     def write(s, p):
+        print("predicate_construction: preference_predicate: writing: " + 
+              './goodreads/' + str(fold) + '/' + setting + '/preference_' + p + '.txt')   
         s.to_csv('./goodreads/' + str(fold) + '/' + setting + '/preference_' + p + '.txt',
                  sep='\t', header=False, index=True)
 
@@ -267,7 +329,11 @@ def item_collab_filter_cosine_predicate(interactions_df, books_df, obs_interacti
 
     k = 10
 
+    print("predicate_construction: item_collab_filter_cosine_predicate:")
+
     def write(s, p):
+        print("predicate_construction: item_collab_filter_cosine_predicate: writing: " + 
+              './goodreads/' + str(fold) + '/' + setting + '/item_collab_filter_cosine_' + p + '.txt')   
         s.to_csv('./goodreads/' + str(fold) + '/' + setting + '/item_collab_filter_cosine_' + p + '.txt',
                  sep='\t', header=False, index=True)
 
@@ -292,7 +358,8 @@ def item_collab_filter_cosine_predicate(interactions_df, books_df, obs_interacti
     # create genre to book data frame, genre is from shelf names by users
     # index: book_id, columns: genre
     genre_series = pd.Series(index=observed_books_df.index)
-    for book_id, book in observed_books_df.iterrows():
+    print("predicate_construction: item_collab_filter_cosine_predicate: building genre series")
+    for book_id, book in tqdm(observed_books_df.iterrows()):
         for i in range(len(book.popular_shelves)):
             # note that popular_shelves is sorted
             if book.popular_shelves[i]['name'] != 'to-read':
@@ -303,7 +370,8 @@ def item_collab_filter_cosine_predicate(interactions_df, books_df, obs_interacti
     observed_books_df.loc[:, 'genre'] = genre_series
 
     # block by both 'genre' and 'language_code' and calculate similarity for books within block
-    for _, book_group in observed_books_df.groupby(['genre', 'language_code']):
+    print("predicate_construction: item_collab_filter_cosine_predicate: item_item_sim matrix")
+    for _, book_group in tqdm(observed_books_df.groupby(['genre', 'language_code'])):
         similarity_matrix = cosine_similarity(user_book_shelves.loc[:, book_group.index].transpose())
         item_item_sim.loc[book_group.index, book_group.index] = similarity_matrix
         
@@ -345,8 +413,8 @@ def item_collab_filter_cosine_predicate(interactions_df, books_df, obs_interacti
 #     observed_interactions_df = interactions_df.loc[obs_interactions, :]
 #     observed_books_df = books_df.loc[obs_interactions.get_level_values(1).unique()]
 
-#     # similarity based on shelves (<- chosen since it the most dense value)
-#     # TODO: incorporate sparser and less noising signals from user
+#     # similarity based on shelves (<- chosen since it the densest value)
+#     # TODO: incorporate sparser and less noisy signals from user
 
 #     # index: user_ids columns: book_ids values: 1 if shelved by user 0 o.w.
 #     user_book_shelves = pd.Series(data=1, index=obs_interactions).unstack().fillna(0)
@@ -460,13 +528,18 @@ def targeted_predicate(interactions_df, obs_interactions, target_interactions, t
     :param partition:
     :return:
     """
+    print("predicate_construction: targeted_predicate:")
+
     def write(s, p):
+        print("predicate_construction: targeted_predicate: writing: " + 
+              './goodreads/' + str(fold) + '/' + setting + '/targeted_' + p + '.txt') 
         s.to_csv('./goodreads/' + str(fold) + '/' + setting + '/targeted_' + p + '.txt',
                  sep='\t', header=False, index=True)
 
     # observed predicates
     partition = 'obs'
-    targeted_df = pd.DataFrame(data=1, index=target_interactions, columns=['targeted'])
+    targeted_index = obs_interactions.union(obs_interactions)
+    targeted_df = pd.DataFrame(data=1, index=targeted_index, columns=['targeted'])
     write(targeted_df, partition)
 
 
@@ -478,7 +551,11 @@ def authored_predicate(books_df, fold, setting):
     :return:
     """
 
+    print("predicate_construction: authored_predicate:")
+
     def write(s, p):
+        print("predicate_construction: authored_predicate: writing: " + 
+              './goodreads/' + str(fold) + '/' + setting + '/authored_' + p + '.txt') 
         s.to_csv('./goodreads/' + str(fold) + '/' + setting + '/authored_' + p + '.txt',
                  sep='\t', header=False, index=True)
 
@@ -502,7 +579,11 @@ def series_predicate(books_df, fold, setting):
     :param partition:
     :return:
     """
+    print("predicate_construction: series_predicate:")
+
     def write(s, p):
+        print("predicate_construction: series_predicate: writing: " + 
+              './goodreads/' + str(fold) + '/' + setting + '/series_' + p + '.txt') 
         s.to_csv('./goodreads/' + str(fold) + '/' + setting + '/series_' + p + '.txt',
                  sep='\t', header=False, index=True)
 
@@ -526,7 +607,11 @@ def genre_predicate(books_df, fold, setting):
     :param partition:
     :return:
     """
+    print("predicate_construction: genre_predicate:")
+
     def write(s, p):
+        print("predicate_construction: genre_predicate: writing: " + 
+              './goodreads/' + str(fold) + '/' + setting + '/genre_' + p + '.txt') 
         s.to_csv('./goodreads/' + str(fold) + '/' + setting + '/genre_' + p + '.txt',
                  sep='\t', header=False, index=True)
 
@@ -558,7 +643,11 @@ def book_average_rating_predicate(books_df, fold, setting):
     :param setting:
     :return:
     """
+    print("predicate_construction: book_average_rating_predicate:")
+
     def write(s, p):
+        print("predicate_construction: book_average_rating_predicate: writing: " + 
+              './goodreads/' + str(fold) + '/' + setting + '/book_average_rating_' + p + '.txt')  
         s.to_csv('./goodreads/' + str(fold) + '/' + setting + '/book_average_rating_' + p + '.txt',
                  sep='\t', header=False, index=True)
 
@@ -580,7 +669,11 @@ def book_publisher_predicate(books_df, fold, setting):
     :param setting:
     :return:
     """
+    print("predicate_construction: book_publisher_predicate:")
+
     def write(s, p):
+        print("predicate_construction: book_publisher_predicate: writing: " + 
+              './goodreads/' + str(fold) + '/' + setting + '/publisher_' + p + '.txt')  
         s.to_csv('./goodreads/' + str(fold) + '/' + setting + '/publisher_' + p + '.txt',
                  sep='\t', header=False, index=True)
 
